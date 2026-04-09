@@ -1,3 +1,1 @@
-# React + TypeScript + Vite
-
-## Проверяемое задание «Хук useReducer»
+# https://use-reducer.vercel.app/
