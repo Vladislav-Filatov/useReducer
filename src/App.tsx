@@ -46,29 +46,51 @@ const App = () => {
       type: 'setSearchQuery',
       payload: e.target.value
     })
-  }
+  };
 
-  useEffect(() => {
-    const fetchFunc = async () => {
-      try {
-        const response = await fetch(
-          `https://jsonplaceholder.typicode.com/users?username=${state.searchQuery}`
-        );
-        const resJson = await response.json();
-        dispatch({
-          type: 'setCurrentUser',
-          payload: resJson[0] ?? null,
-        })
-      } catch {
-        dispatch({
-          type: 'setCurrentUser',
-          payload: null,
-        })
-      }
-    };
+  const normalizedQuery = state.searchQuery.trim();
 
-    void fetchFunc();
-  }, [state.searchQuery]);
+  useEffect(()  => {
+    if (!normalizedQuery) {
+      dispatch({
+        type: 'setCurrentUser',
+        payload: null,
+      });
+      return;
+    }
+
+    const abortController = new AbortController();
+
+    const timeoutId = setTimeout(() => {
+      const fetchFunc = async () => {
+        try {
+          const response = await fetch(
+            `https://jsonplaceholder.typicode.com/users?username=${normalizedQuery}`,
+            {signal: abortController.signal}
+          );
+          const resJson = await response.json();
+          dispatch({
+            type: 'setCurrentUser',
+            payload: resJson[0] ?? null,
+          })
+        } catch (error) {
+          if (error instanceof DOMException && error.name==='AbortError') return;
+          dispatch({
+            type: 'setCurrentUser',
+            payload: null,
+          })
+        }
+      };
+
+      void fetchFunc();
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      abortController.abort();
+    }
+
+  }, [normalizedQuery]);
 
   return (
     <div className="card">
